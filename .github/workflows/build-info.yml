@@ -95,6 +95,7 @@ jobs:
           GITHUB_TAG_PATTERN="${VERSION_PREFIX}\.${DATE_PATTERN}[0-9]*"
           echo "GITHUB_TAG_PATTERN=$GITHUB_TAG_PATTERN"
 
+          # Fetch the last build tag for the day
           LAST_BUILD_TAG=$(git tag -l "${GITHUB_TAG_PATTERN}" | sort -V | tail -n 1)
           echo "Last build tag for today: $LAST_BUILD_TAG"
 
@@ -103,6 +104,7 @@ jobs:
             echo "No existing build tag found for today, set BUILD_NO=1"
           else
             LAST_BUILD_NO=$(echo $LAST_BUILD_TAG | sed -E "s/.*\.([0-9]+)$/\1/")
+            echo "Extracted LAST_BUILD_NO=$LAST_BUILD_NO"
             BUILD_NO=$(( LAST_BUILD_NO + 1 ))
             echo "Incremented BUILD_NO=$BUILD_NO based on last build tag $LAST_BUILD_TAG"
           fi
