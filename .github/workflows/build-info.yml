@@ -120,11 +120,12 @@ jobs:
       - name: Add Commit Tag
         env:
           ACTIONS_PAT: ${{ secrets.PAT }}
-          github_token: ${{ secrets.PAT }}
-          token: ${{ secrets.PAT }}
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          
+          # Unset the default GITHUB_TOKEN to ensure the PAT is used
+          unset GITHUB_TOKEN
           
           git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}
           
