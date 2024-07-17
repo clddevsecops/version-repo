@@ -131,7 +131,7 @@ jobs:
 
       - name: Add and push tag
         env:
-          ACTIONS_PAT: ${{ secrets.PAT }}
+         token: ${{ secrets.PAT }}
         run: |
           tag="$BUILD_NAME"
           oldtag=$(git tag -l $tag)
@@ -143,3 +143,4 @@ jobs:
 
           git tag -a $tag -m "tagged by build"
           git push origin $tag
+
