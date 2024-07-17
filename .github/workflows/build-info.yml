@@ -29,6 +29,9 @@ env:
   TARGET_TENANT: ${{ github.event.inputs.target_tenant || 'CiniWorld - 99Monthly' }}
   TARGET_ENVIRONMENT: ${{ github.event.inputs.target_environment || 'QA' }}
 
+permissions:
+  contents: write  # This line gives the workflow write permissions
+  pull-requests: write  # This line gives the workflow pull request permissions
 jobs:
   build-info:
     runs-on: ubuntu-latest
