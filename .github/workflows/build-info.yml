@@ -56,16 +56,16 @@ jobs:
 
       - name: Get Current Patch Number
         run: |
-          GITHUB_TAG_PATTERN=$(date "+${TECHNICAL_VERSION}.[0-9]*${PRE_RELEASE_TAG}+%y%j[0-9]*")
+          GITHUB_TAG_PATTERN="${{ env.TECHNICAL_VERSION }}.[0-9]*${{ env.PRE_RELEASE_TAG }}.[0-9]*"
           GITHUB_TAG=$(git describe --tags --abbrev=0 --match="${GITHUB_TAG_PATTERN}" 2>/dev/null | awk 'NR==1{print $1}')
 
           echo "GITHUB_TAG_PATTERN=$GITHUB_TAG_PATTERN"
           echo "Found github tag=$GITHUB_TAG"
 
           if [ -z "$GITHUB_TAG" ]; then
-            PATCH_NUMBER=-1
+            PATCH_NUMBER=0
           else
-            PATCH_NUMBER=$( echo $GITHUB_TAG | sed -E "s/[[:digit:]]*\.[[:digit:]]*\.([[:digit:]]*)($PRE_RELEASE_TAG)?\+[[:digit:]]*/\1/")
+            PATCH_NUMBER=$(echo $GITHUB_TAG | sed -E "s/${{ env.TECHNICAL_VERSION }}\.([0-9]+).*/\1/")
           fi
 
           echo "PATCH_NUMBER=$PATCH_NUMBER" >> $GITHUB_ENV
@@ -79,13 +79,13 @@ jobs:
       - name: Set Build Info
         id: set-build-info
         run: |
-          if [ $PATCH_NUMBER -eq -1 ]; then
-            PATCH_NUMBER=0
+          if [ $PATCH_NUMBER -eq 0 ]; then
+            PATCH_NUMBER=1
           fi
 
-          VERSION_PREFIX="${TECHNICAL_VERSION}.${PATCH_NUMBER}${PRE_RELEASE_TAG}"
+          VERSION_PREFIX="${{ env.TECHNICAL_VERSION }}.${PATCH_NUMBER}${{ env.PRE_RELEASE_TAG }}"
           DATE_PATTERN=$(date "+%y%j")
-          GITHUB_TAG_PATTERN="${VERSION_PREFIX}+${DATE_PATTERN}[0-9]*"
+          GITHUB_TAG_PATTERN="${VERSION_PREFIX}.${DATE_PATTERN}[0-9]*"
           LAST_BUILD_TAG=$(git tag -l "${GITHUB_TAG_PATTERN}" | sort -V | tail -n 1)
 
           echo "GITHUB_TAG_PATTERN=$GITHUB_TAG_PATTERN"
@@ -94,16 +94,16 @@ jobs:
           if [ -z "$LAST_BUILD_TAG" ]; then
             BUILD_NO=1
           else
-            LAST_BUILD_NO=$( echo $LAST_BUILD_TAG | sed -E "s/.*${DATE_PATTERN}([[:digit:]]*)$/\1/")
+            LAST_BUILD_NO=$(echo $LAST_BUILD_TAG | sed -E "s/.*\.([0-9]+)$/\1/")
             BUILD_NO=$(( LAST_BUILD_NO + 1 ))
             echo "Calculated BUILD_NO=$BUILD_NO"
           fi
 
-          echo "major-version=$MAJOR_VERSION" >> $GITHUB_OUTPUT
-          echo "minor-version=$MINOR_VERSION" >> $GITHUB_OUTPUT
+          echo "major-version=${{ env.MAJOR_VERSION }}" >> $GITHUB_OUTPUT
+          echo "minor-version=${{ env.MINOR_VERSION }}" >> $GITHUB_OUTPUT
           BUILD_NO="${DATE_PATTERN}${BUILD_NO}"
-          BUILD_NAME="${VERSION_PREFIX}+${BUILD_NO}"
-          REGISTRY_PATH="appraisal-generic-local/CiniWorld/$RELEASE_STREAM/$BUILD_NAME"
+          BUILD_NAME="${VERSION_PREFIX}.${BUILD_NO}"
+          REGISTRY_PATH="appraisal-generic-local/CiniWorld/${{ env.RELEASE_STREAM }}/${BUILD_NAME}"
           REGISTRY_PATH_MSI="appraisal-generic-local/CiniWorld/ExePrograms"
 
           echo "Registry Path: $REGISTRY_PATH"
@@ -115,8 +115,8 @@ jobs:
           echo "build-name=$BUILD_NAME" >> $GITHUB_OUTPUT
           echo "build-number=$BUILD_NO" >> $GITHUB_OUTPUT
           echo "patch-number=$PATCH_NUMBER" >> $GITHUB_OUTPUT
-          echo "product-release-stream=$RELEASE_STREAM" >> $GITHUB_OUTPUT
-          echo "target-branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+          echo "product-release-stream=${{ env.RELEASE_STREAM }}" >> $GITHUB_OUTPUT
+          echo "target-branch=${{ env.TARGET_BRANCH }}" >> $GITHUB_OUTPUT
 
       - name: Set up Git
         run: |
