@@ -117,18 +117,22 @@ jobs:
           echo "product-release-stream=$RELEASE_STREAM" >> $GITHUB_OUTPUT
           echo "target-branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
 
-      - name: Add Commit Tag
-        env:
-          ACTIONS_PAT: ${{ secrets.PAT }}
+      - name: Set up Git
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          
-          # Unset the default GITHUB_TOKEN to ensure the PAT is used
+
+      - name: Unset default GITHUB_TOKEN and set PAT
+        env:
+          ACTIONS_PAT: ${{ secrets.PAT }}
+        run: |
           unset GITHUB_TOKEN
-          
           git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}
-          
+
+      - name: Add and push tag
+        env:
+          ACTIONS_PAT: ${{ secrets.PAT }}
+        run: |
           tag="$BUILD_NAME"
           oldtag=$(git tag -l $tag)
 
