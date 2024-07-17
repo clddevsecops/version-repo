@@ -17,6 +17,9 @@ on:
         required: false
         default: true
 
+permissions:
+  contents: write
+
 env:
   BASE_VERSION: "8.9.0"
   TECHNICAL_VERSION: "8.9"
@@ -29,9 +32,6 @@ env:
   TARGET_TENANT: ${{ github.event.inputs.target_tenant || 'CiniWorld - 99Monthly' }}
   TARGET_ENVIRONMENT: ${{ github.event.inputs.target_environment || 'QA' }}
 
-permissions:
-  contents: write
-  
 jobs:
   build-info:
     runs-on: ubuntu-latest
@@ -118,10 +118,14 @@ jobs:
           echo "target-branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
 
       - name: Add Commit Tag
+        env:
+          PAT: ${{ secrets.PAT }}
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-
+          
+          git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}
+          
           tag="$BUILD_NAME"
           oldtag=$(git tag -l $tag)
 
