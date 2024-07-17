@@ -1,0 +1,131 @@
+name: Build Info
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Target branch'
+        required: false
+      target_tenant:
+        description: 'Target tenant'
+        required: false
+      target_environment:
+        description: 'Target environment'
+        required: false
+      increment_patch_number:
+        description: 'Increment patch number'
+        required: false
+        default: true
+
+env:
+  BASE_VERSION: "8.9.0"
+  TECHNICAL_VERSION: "8.9"
+  MAJOR_VERSION: "8"
+  MINOR_VERSION: "9"
+  MARKETING_VERSION: "2022.1"
+  PRE_RELEASE_TAG: "-maint"
+  RELEASE_STREAM: "release/8.9"
+  TARGET_BRANCH: ${{ github.event.inputs.target_branch || 'release/8.9' }}
+  TARGET_TENANT: ${{ github.event.inputs.target_tenant || 'CiniWorld - 99Monthly' }}
+  TARGET_ENVIRONMENT: ${{ github.event.inputs.target_environment || 'QA' }}
+
+jobs:
+  build-info:
+    runs-on: ubuntu-latest
+    outputs:
+      build-name: ${{ steps.set-build-info.outputs.build-name }}
+      registry-path: ${{ steps.set-build-info.outputs.registry-path }}
+      registry-path-msi: ${{ steps.set-build-info.outputs.registry-path-msi }}
+      major-version: ${{ steps.set-build-info.outputs.major-version }}
+      minor-version: ${{ steps.set-build-info.outputs.minor-version }}
+      patch-number: ${{ steps.set-build-info.outputs.patch-number }}
+      build-number: ${{ steps.set-build-info.outputs.build-number }}
+      product-release-stream: ${{ steps.set-build-info.outputs.product-release-stream }}
+      target-branch: ${{ steps.set-build-info.outputs.target-branch }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+          lfs: false
+
+      - name: Get Current Patch Number
+        run: |
+          GITHUB_TAG_PATTERN=$(date "+${TECHNICAL_VERSION}.[0-9]*${PRE_RELEASE_TAG}+%y%j[0-9]*")
+          GITHUB_TAG=$(git describe --tags --abbrev=0 --match="${GITHUB_TAG_PATTERN}" 2>/dev/null | awk 'NR==1{print $1}')
+
+          echo "GITHUB_TAG_PATTERN=$GITHUB_TAG_PATTERN"
+          echo "Found github tag=$GITHUB_TAG"
+
+          if [ -z "$GITHUB_TAG" ]; then
+            PATCH_NUMBER=-1
+          else
+            PATCH_NUMBER=$( echo $GITHUB_TAG | sed -E "s/[[:digit:]]*\.[[:digit:]]*\.([[:digit:]]*)($PRE_RELEASE_TAG)?\+[[:digit:]]*/\1/")
+          fi
+
+          echo "PATCH_NUMBER=$PATCH_NUMBER" >> $GITHUB_ENV
+
+      - name: Get Incremented Patch Number
+        if: ${{ inputs.increment_patch_number }}
+        run: |
+          PATCH_NUMBER=$(( PATCH_NUMBER + 1 ))
+          echo "PATCH_NUMBER=$PATCH_NUMBER" >> $GITHUB_ENV
+
+      - name: Set Build Info
+        id: set-build-info
+        run: |
+          if [ $PATCH_NUMBER -eq -1 ]; then
+            PATCH_NUMBER=0
+          fi
+
+          VERSION_PREFIX="${TECHNICAL_VERSION}.${PATCH_NUMBER}${PRE_RELEASE_TAG}"
+          DATE_PATTERN=$(date "+%y%j")
+          GITHUB_TAG_PATTERN=$(date "+${VERSION_PREFIX}+%y%j[0-9]*")
+          GITHUB_TAG=$(git describe --tags --abbrev=0 --match="${GITHUB_TAG_PATTERN}" 2>/dev/null | awk 'NR==1{print $1}')
+
+          echo "GITHUB_TAG_PATTERN=$GITHUB_TAG_PATTERN"
+          echo "Found github tag=$GITHUB_TAG"
+
+          if [ -z "$GITHUB_TAG" ]; then
+            BUILD_NO=1
+          else
+            BUILD_NO=$( echo $GITHUB_TAG | sed -E "s/[[:digit:]]*\.[[:digit:]]*\.[[:digit:]]*($PRE_RELEASE_TAG)?\+$DATE_PATTERN([[:digit:]]*)/\2/")
+            BUILD_NO=$(( BUILD_NO + 1 ))
+            echo "Calculated BUILD_NO=$BUILD_NO"
+          fi
+
+          echo "major-version=$MAJOR_VERSION" >> $GITHUB_OUTPUT
+          echo "minor-version=$MINOR_VERSION" >> $GITHUB_OUTPUT
+          BUILD_NO="${DATE_PATTERN}${BUILD_NO}"
+          BUILD_NAME="${VERSION_PREFIX}.${BUILD_NO}"
+          REGISTRY_PATH="appraisal-generic-local/CiniWorld/$RELEASE_STREAM/$BUILD_NAME"
+          REGISTRY_PATH_MSI="appraisal-generic-local/CiniWorld/ExePrograms"
+
+          echo "Registry Path: $REGISTRY_PATH"
+          echo "Registry Path Msi: $REGISTRY_PATH_MSI"
+          echo "registry-path=$REGISTRY_PATH" >> $GITHUB_OUTPUT
+          echo "registry-path-msi=$REGISTRY_PATH_MSI" >> $GITHUB_OUTPUT
+          echo "Build Name: $BUILD_NAME"
+          echo "BUILD_NAME=$BUILD_NAME" >> $GITHUB_ENV
+          echo "build-name=$BUILD_NAME" >> $GITHUB_OUTPUT
+          echo "build-number=$BUILD_NO" >> $GITHUB_OUTPUT
+          echo "patch-number=$PATCH_NUMBER" >> $GITHUB_OUTPUT
+          echo "product-release-stream=$RELEASE_STREAM" >> $GITHUB_OUTPUT
+          echo "target-branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Add Commit Tag
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
+          tag="$BUILD_NAME"
+          oldtag=$(git tag -l $tag)
+
+          if [ ! -z $oldtag ]; then
+              git tag -d $tag
+              git push origin :refs/tags/$tag
+          fi
+
+          git tag -a $tag -m "tagged by build"
+          git push origin $tag
