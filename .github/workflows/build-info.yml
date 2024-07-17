@@ -94,8 +94,8 @@ jobs:
           if [ -z "$LAST_BUILD_TAG" ]; then
             BUILD_NO=1
           else
-            BUILD_NO=$( echo $LAST_BUILD_TAG | sed -E "s/.*${DATE_PATTERN}([[:digit:]]*)$/\1/")
-            BUILD_NO=$(( BUILD_NO + 1 ))
+            LAST_BUILD_NO=$( echo $LAST_BUILD_TAG | sed -E "s/.*${DATE_PATTERN}([[:digit:]]*)$/\1/")
+            BUILD_NO=$(( LAST_BUILD_NO + 1 ))
             echo "Calculated BUILD_NO=$BUILD_NO"
           fi
 
