@@ -97,8 +97,7 @@ jobs:
 
           echo "major-version=${{ env.MAJOR_VERSION }}" >> $GITHUB_OUTPUT
           echo "minor-version=${{ env.MINOR_VERSION }}" >> $GITHUB_OUTPUT
-          BUILD_NO="${DATE_PATTERN}${BUILD_NO}"
-          BUILD_NAME="${VERSION_PREFIX}.${BUILD_NO}"
+          BUILD_NAME="${VERSION_PREFIX}.${DATE_PATTERN}${BUILD_NO}"
           REGISTRY_PATH="appraisal-generic-local/CiniWorld/${{ env.RELEASE_STREAM }}/${BUILD_NAME}"
           REGISTRY_PATH_MSI="appraisal-generic-local/CiniWorld/ExePrograms"
 
