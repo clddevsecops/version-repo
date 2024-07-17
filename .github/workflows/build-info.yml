@@ -15,7 +15,7 @@ on:
       increment_patch_number:
         description: 'Increment patch number'
         required: false
-        default: true
+        default: false
 
 permissions:
   contents: write
@@ -71,7 +71,7 @@ jobs:
           echo "PATCH_NUMBER=$PATCH_NUMBER" >> $GITHUB_ENV
 
       - name: Get Incremented Patch Number
-        if: ${{ inputs.increment_patch_number }}
+        if: ${{ inputs.increment_patch_number == 'true' }}
         run: |
           PATCH_NUMBER=$(( PATCH_NUMBER + 1 ))
           echo "PATCH_NUMBER=$PATCH_NUMBER" >> $GITHUB_ENV
@@ -79,10 +79,6 @@ jobs:
       - name: Set Build Info
         id: set-build-info
         run: |
-          if [ $PATCH_NUMBER -eq 0 ]; then
-            PATCH_NUMBER=1
-          fi
-
           VERSION_PREFIX="${{ env.TECHNICAL_VERSION }}.${PATCH_NUMBER}${{ env.PRE_RELEASE_TAG }}"
           DATE_PATTERN=$(date "+%y%m%d")
           GITHUB_TAG_PATTERN="${VERSION_PREFIX}\.${DATE_PATTERN}[0-9]*"
