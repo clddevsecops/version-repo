@@ -126,6 +126,7 @@ jobs:
       - name: Unset default GITHUB_TOKEN and set PAT
         env:
           ACTIONS_PAT: ${{ secrets.PAT }}
+          token: ${{ secrets.PAT }}
         run: |
           unset GITHUB_TOKEN
           git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}
