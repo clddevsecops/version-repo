@@ -102,7 +102,7 @@ jobs:
           echo "major-version=$MAJOR_VERSION" >> $GITHUB_OUTPUT
           echo "minor-version=$MINOR_VERSION" >> $GITHUB_OUTPUT
           BUILD_NO="${DATE_PATTERN}${BUILD_NO}"
-          BUILD_NAME="${VERSION_PREFIX}.${BUILD_NO}"
+          BUILD_NAME="${VERSION_PREFIX}+${BUILD_NO}"
           REGISTRY_PATH="appraisal-generic-local/CiniWorld/$RELEASE_STREAM/$BUILD_NAME"
           REGISTRY_PATH_MSI="appraisal-generic-local/CiniWorld/ExePrograms"
 
@@ -136,12 +136,5 @@ jobs:
           token: ${{ secrets.PAT }}
         run: |
           tag="$BUILD_NAME"
-          oldtag=$(git tag -l $tag)
-
-          if [ ! -z $oldtag ]; then
-              git tag -d $tag
-              git push origin :refs/tags/$tag
-          fi
-
           git tag -a $tag -m "tagged by build"
           git push origin $tag
