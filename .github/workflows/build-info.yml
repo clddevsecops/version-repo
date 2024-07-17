@@ -50,6 +50,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ env.TARGET_BRANCH }}
+          token: ${{ secrets.PAT }}
           fetch-depth: 0
           lfs: false
 
