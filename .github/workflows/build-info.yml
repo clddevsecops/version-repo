@@ -56,19 +56,18 @@ jobs:
 
       - name: Get Current Patch Number
         run: |
-          # Define the tag pattern to search for
           GITHUB_TAG_PATTERN="${{ env.TECHNICAL_VERSION }}.[0-9]*${{ env.PRE_RELEASE_TAG }}.*"
-          # Get the most recent tag that matches the pattern
-          GITHUB_TAG=$(git describe --tags --abbrev=0 --match="${GITHUB_TAG_PATTERN}" 2>/dev/null | awk 'NR==1{print $1}')
-
           echo "GITHUB_TAG_PATTERN=$GITHUB_TAG_PATTERN"
+
+          GITHUB_TAG=$(git describe --tags --abbrev=0 --match="${GITHUB_TAG_PATTERN}" 2>/dev/null | awk 'NR==1{print $1}')
           echo "Found github tag=$GITHUB_TAG"
 
-          # Extract the patch number from the tag, if found
           if [ -z "$GITHUB_TAG" ]; then
             PATCH_NUMBER=0
+            echo "No existing tag found, set PATCH_NUMBER=0"
           else
             PATCH_NUMBER=$(echo $GITHUB_TAG | sed -E "s/${{ env.TECHNICAL_VERSION }}\.([0-9]+).*/\1/")
+            echo "Extracted PATCH_NUMBER=$PATCH_NUMBER from $GITHUB_TAG"
           fi
 
           echo "PATCH_NUMBER=$PATCH_NUMBER" >> $GITHUB_ENV
@@ -76,47 +75,48 @@ jobs:
       - name: Get Incremented Patch Number
         if: ${{ inputs.increment_patch_number == 'true' }}
         run: |
-          # Increment the patch number if required
           PATCH_NUMBER=$(( PATCH_NUMBER + 1 ))
+          echo "Incremented PATCH_NUMBER=$PATCH_NUMBER"
           echo "PATCH_NUMBER=$PATCH_NUMBER" >> $GITHUB_ENV
 
       - name: Set Build Info
         id: set-build-info
         run: |
-          # If PATCH_NUMBER is 0, we set it to 1 (for the first build of the day)
           if [ $PATCH_NUMBER -eq 0 ]; then
             PATCH_NUMBER=1
           fi
 
-          # Define the version prefix and date pattern
           VERSION_PREFIX="${{ env.TECHNICAL_VERSION }}.${PATCH_NUMBER}${{ env.PRE_RELEASE_TAG }}"
+          echo "VERSION_PREFIX=$VERSION_PREFIX"
+
           DATE_PATTERN=$(date "+%y%m%d")
-          # Define the pattern to search for existing build tags
+          echo "DATE_PATTERN=$DATE_PATTERN"
+
           GITHUB_TAG_PATTERN="${VERSION_PREFIX}\.${DATE_PATTERN}[0-9]*"
-          # Get the last build tag for the day
-          LAST_BUILD_TAG=$(git tag -l "${GITHUB_TAG_PATTERN}" | sort -V | tail -n 1)
-
           echo "GITHUB_TAG_PATTERN=$GITHUB_TAG_PATTERN"
-          echo "Last build tag=$LAST_BUILD_TAG"
 
-          # Calculate the build number based on the last build tag
+          LAST_BUILD_TAG=$(git tag -l "${GITHUB_TAG_PATTERN}" | sort -V | tail -n 1)
+          echo "Last build tag for today: $LAST_BUILD_TAG"
+
           if [ -z "$LAST_BUILD_TAG" ]; then
             BUILD_NO=1
+            echo "No existing build tag found for today, set BUILD_NO=1"
           else
             LAST_BUILD_NO=$(echo $LAST_BUILD_TAG | sed -E "s/.*\.([0-9]+)$/\1/")
             BUILD_NO=$(( LAST_BUILD_NO + 1 ))
-            echo "Calculated BUILD_NO=$BUILD_NO"
+            echo "Incremented BUILD_NO=$BUILD_NO based on last build tag $LAST_BUILD_TAG"
           fi
 
           echo "major-version=${{ env.MAJOR_VERSION }}" >> $GITHUB_OUTPUT
           echo "minor-version=${{ env.MINOR_VERSION }}" >> $GITHUB_OUTPUT
-          # Combine version prefix, date pattern, and build number to create the build name
           BUILD_NAME="${VERSION_PREFIX}.${DATE_PATTERN}${BUILD_NO}"
+          echo "BUILD_NAME=$BUILD_NAME"
+
           REGISTRY_PATH="appraisal-generic-local/CiniWorld/${{ env.RELEASE_STREAM }}/${BUILD_NAME}"
           REGISTRY_PATH_MSI="appraisal-generic-local/CiniWorld/ExePrograms"
 
           echo "Registry Path: $REGISTRY_PATH"
-          echo "Registry Path Msi: $REGISTRY_PATH_MSI"
+          echo "Registry Path MSI: $REGISTRY_PATH_MSI"
           echo "registry-path=$REGISTRY_PATH" >> $GITHUB_OUTPUT
           echo "registry-path-msi=$REGISTRY_PATH_MSI" >> $GITHUB_OUTPUT
           echo "Build Name: $BUILD_NAME"
@@ -138,12 +138,16 @@ jobs:
           token: ${{ secrets.PAT }}
         run: |
           unset GITHUB_TOKEN
+          echo "Unset default GITHUB_TOKEN"
           git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}
+          echo "Set remote URL with PAT"
 
       - name: Add and push tag
         env:
           token: ${{ secrets.PAT }}
         run: |
           tag="$BUILD_NAME"
+          echo "Creating tag: $tag"
           git tag -a $tag -m "tagged by build"
           git push origin $tag
+          echo "Pushed tag: $tag"
