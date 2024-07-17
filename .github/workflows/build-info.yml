@@ -56,12 +56,15 @@ jobs:
 
       - name: Get Current Patch Number
         run: |
+          # Define the tag pattern to search for
           GITHUB_TAG_PATTERN="${{ env.TECHNICAL_VERSION }}.[0-9]*${{ env.PRE_RELEASE_TAG }}.*"
+          # Get the most recent tag that matches the pattern
           GITHUB_TAG=$(git describe --tags --abbrev=0 --match="${GITHUB_TAG_PATTERN}" 2>/dev/null | awk 'NR==1{print $1}')
 
           echo "GITHUB_TAG_PATTERN=$GITHUB_TAG_PATTERN"
           echo "Found github tag=$GITHUB_TAG"
 
+          # Extract the patch number from the tag, if found
           if [ -z "$GITHUB_TAG" ]; then
             PATCH_NUMBER=0
           else
@@ -73,6 +76,7 @@ jobs:
       - name: Get Incremented Patch Number
         if: ${{ inputs.increment_patch_number }}
         run: |
+          # Increment the patch number if required
           PATCH_NUMBER=$(( PATCH_NUMBER + 1 ))
           echo "PATCH_NUMBER=$PATCH_NUMBER" >> $GITHUB_ENV
 
@@ -83,14 +87,18 @@ jobs:
             PATCH_NUMBER=1
           fi
 
+          # Define the version prefix and date pattern
           VERSION_PREFIX="${{ env.TECHNICAL_VERSION }}.${PATCH_NUMBER}${{ env.PRE_RELEASE_TAG }}"
           DATE_PATTERN=$(date "+%y%m%d")
+          # Define the pattern to search for existing build tags
           GITHUB_TAG_PATTERN="${VERSION_PREFIX}.${DATE_PATTERN}[0-9]*"
+          # Get the last build tag for the day
           LAST_BUILD_TAG=$(git tag -l "${GITHUB_TAG_PATTERN}" | sort -V | tail -n 1)
 
           echo "GITHUB_TAG_PATTERN=$GITHUB_TAG_PATTERN"
           echo "Last build tag=$LAST_BUILD_TAG"
 
+          # Calculate the build number based on the last build tag
           if [ -z "$LAST_BUILD_TAG" ]; then
             BUILD_NO=1
           else
