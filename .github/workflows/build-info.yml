@@ -85,16 +85,16 @@ jobs:
 
           VERSION_PREFIX="${TECHNICAL_VERSION}.${PATCH_NUMBER}${PRE_RELEASE_TAG}"
           DATE_PATTERN=$(date "+%y%j")
-          GITHUB_TAG_PATTERN=$(date "+${VERSION_PREFIX}+%y%j[0-9]*")
-          GITHUB_TAG=$(git describe --tags --abbrev=0 --match="${GITHUB_TAG_PATTERN}" 2>/dev/null | awk 'NR==1{print $1}')
+          GITHUB_TAG_PATTERN="${VERSION_PREFIX}+${DATE_PATTERN}[0-9]*"
+          LAST_BUILD_TAG=$(git tag -l "${GITHUB_TAG_PATTERN}" | sort -V | tail -n 1)
 
           echo "GITHUB_TAG_PATTERN=$GITHUB_TAG_PATTERN"
-          echo "Found github tag=$GITHUB_TAG"
+          echo "Last build tag=$LAST_BUILD_TAG"
 
-          if [ -z "$GITHUB_TAG" ]; then
+          if [ -z "$LAST_BUILD_TAG" ]; then
             BUILD_NO=1
           else
-            BUILD_NO=$( echo $GITHUB_TAG | sed -E "s/[[:digit:]]*\.[[:digit:]]*\.[[:digit:]]*($PRE_RELEASE_TAG)?\+$DATE_PATTERN([[:digit:]]*)/\2/")
+            BUILD_NO=$( echo $LAST_BUILD_TAG | sed -E "s/.*${DATE_PATTERN}([[:digit:]]*)$/\1/")
             BUILD_NO=$(( BUILD_NO + 1 ))
             echo "Calculated BUILD_NO=$BUILD_NO"
           fi
@@ -133,7 +133,7 @@ jobs:
 
       - name: Add and push tag
         env:
-         token: ${{ secrets.PAT }}
+          token: ${{ secrets.PAT }}
         run: |
           tag="$BUILD_NAME"
           oldtag=$(git tag -l $tag)
@@ -145,4 +145,3 @@ jobs:
 
           git tag -a $tag -m "tagged by build"
           git push origin $tag
-
