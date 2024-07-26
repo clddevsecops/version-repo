@@ -86,7 +86,7 @@ jobs:
 
           VERSION_PREFIX="${MARKETING_VERSION}${PRE_RELEASE_TAG}"
           DATE_PATTERN=$(date "+%y%j")
-          GITHUB_TAG_PATTERN=$(date "+${VERSION_PREFIX}.%y%j[0-9]*.${MARKETING_VERSION_NUMBER}")
+          GITHUB_TAG_PATTERN=$(date "+${VERSION_PREFIX}.%y%j[0-9]*")
           GITHUB_TAG=$(git describe --tags --abbrev=0 --match="${GITHUB_TAG_PATTERN}" 2>/dev/null | awk 'NR==1{print $1}')
 
           echo "GITHUB_TAG_PATTERN=$GITHUB_TAG_PATTERN"
@@ -103,7 +103,7 @@ jobs:
           echo "major-version=$MAJOR_VERSION" >> $GITHUB_OUTPUT
           echo "minor-version=$MINOR_VERSION" >> $GITHUB_OUTPUT
           BUILD_NO="${DATE_PATTERN}${BUILD_NO}"
-          BUILD_NAME="${VERSION_PREFIX}.${PATCH_NUMBER}.${BUILD_NO}.${MARKETING_VERSION_NUMBER}"
+          BUILD_NAME="${VERSION_PREFIX}.${BUILD_NO}.${MARKETING_VERSION_NUMBER}"
           REGISTRY_PATH="appraisal-generic-local/iasWorld/$RELEASE_STREAM/$BUILD_NAME"
           REGISTRY_PATH_MSI="appraisal-generic-local/iasWorld/ExePrograms"
 
