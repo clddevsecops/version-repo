@@ -84,7 +84,7 @@ jobs:
             PATCH_NUMBER=0
           fi
 
-          VERSION_PREFIX="${MARKETING_VERSION}${PRE_RELEASE_TAG}"
+          VERSION_PREFIX="${MARKETING_VERSION}.${PATCH_NUMBER}${PRE_RELEASE_TAG}"
           DATE_PATTERN=$(date "+%y%j")
           GITHUB_TAG_PATTERN=$(date "+${VERSION_PREFIX}.%y%j[0-9]*")
           GITHUB_TAG=$(git describe --tags --abbrev=0 --match="${GITHUB_TAG_PATTERN}" 2>/dev/null | awk 'NR==1{print $1}')
